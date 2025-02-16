@@ -7,6 +7,10 @@ It uses DeepSeek R1 (via Ollama) to generate reasoning and appends it to user qu
 Integrates as an Ollama service into OpenWebUI. 
 By prefixing the available models installed in Ollama in order to distinguish between the standard Ollama models and the CoT-augmented versions, resolving model naming conflicts.
 
+### Example: 9.11 vs 9.9 Decision
+
+![phi4 vs thinkphi4](docs/images/example-phi4-vs-thinkphi4-9.11gt9.9.png)
+
 ## Features
 
 - **Ollama-Based DeepSeek R1 Integration:** Utilizes Ollama to run DeepSeek R1 for internal CoT generation and extraction.
