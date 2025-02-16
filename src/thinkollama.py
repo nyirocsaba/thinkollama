@@ -2,12 +2,14 @@ import os
 import re
 import logging
 import httpx
+import asyncio
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from datetime import datetime
 from fastapi.responses import StreamingResponse
 from ollama import Client
+from contextlib import asynccontextmanager
 
 # Load environment variables
 load_dotenv()
@@ -25,6 +27,31 @@ app = FastAPI()
 deepseek = Client(host=DEEPSEEK_URL)
 ollama = Client(host=OLLAMA_URL)
 
+async def check_and_pull_model(retries=5, delay=10):
+    for attempt in range(retries):
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(f"{OLLAMA_URL}/api/tags")
+                if response.status_code == 200:
+                    models = response.json().get("models", [])
+                    if not any(model.get("model") == DEEPSEEK_MODEL for model in models):
+                        logging.info(f"Pulling missing model: {DEEPSEEK_MODEL}")
+                        ollama.pull(DEEPSEEK_MODEL)
+                    return
+        except Exception as e:
+            logging.error(f"Error checking/pulling model '{DEEPSEEK_MODEL}' (Attempt {attempt + 1}/{retries}): {str(e)}")
+            if attempt < retries - 1:
+                logging.info(f"Retrying in {delay} seconds...")
+                await asyncio.sleep(delay)
+    raise RuntimeError(f"Failed to pull DeepSeek model '{DEEPSEEK_MODEL}' after multiple attempts. Exiting application.")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await check_and_pull_model()
+    yield
+
+app = FastAPI(lifespan=lifespan)
+
 class ChatRequest(BaseModel):
     model: str
     messages: list[dict] = Field(default_factory=list)
@@ -41,8 +68,8 @@ async def chat_completion(request: ChatRequest):
         model = request.model.replace(MODELS_PREFIX, "")
         updated_messages = request.messages.copy()
 
-        # Use DeepSeek for reasoning if the model has the required prefix
-        if request.model.startswith(MODELS_PREFIX):
+        # Use DeepSeek for reasoning if the model has the required prefix and isn't the DEEPSEEK_MODEL itself
+        if request.model.startswith(MODELS_PREFIX) and model != DEEPSEEK_MODEL:
             deepseek_response = deepseek.chat(
                 model=DEEPSEEK_MODEL,
                 messages=request.messages,
