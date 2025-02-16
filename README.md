@@ -54,7 +54,7 @@ To run **ThinkOllama** and **Ollama** in separate containers:
 3. **Verify connectivity:**
 
    ```bash
-   docker exec -it thinkollama curl http://host.docker.internal:11434/api/tags
+   curl http://127.0.0.1:11435/api/tags
    ```
 
 If this returns a list of models, ThinkOllama is successfully communicating with Ollama!
