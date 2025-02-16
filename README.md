@@ -9,8 +9,6 @@ By prefixing the available models installed in Ollama in order to distinguish be
 
 ### Example: 9.11 vs 9.9 Decision
 
-Here’s an example comparison between phi4 and think:phi4:
-
 ![phi4 vs thinkphi4](docs/images/example-phi4-vs-thinkphi4-9.11gt9.9.png)
 
 ## Features
